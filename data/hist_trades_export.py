@@ -37,8 +37,7 @@ class Recorder():
             safe_move(filepath, file_completed)
 
     def record_trade(self, data):
-        data_list = data.T.to_dict().values()
-        self.cass_repository.save_async(data_list)
+        self.cass_repository.save_async(data)
 
     @staticmethod
     def create_data_frame(df):
@@ -75,6 +74,8 @@ class Recorder():
                            'FIXTURES', 'EVENT_NAME', 'MARKET_TYPE']]
 
         df_loop = df_loop.rename(columns = {col:col.lower().replace(" ", "_") for col in df_loop.columns})
+
+
 
         return df_loop
 

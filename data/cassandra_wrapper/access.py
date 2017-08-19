@@ -12,7 +12,7 @@ from common import singleton, get_config, process_singleton
 MAX_PARALLEL_QUERIES = 256
 
 QUOTE_SAMPLINGS = ('raw', 'sec', 'sec_shift', 'min', 'hr')
-MAX_BATCH_SIZE = 1000
+MAX_BATCH_SIZE = 10
 _query_parallel_sema = BoundedSemaphore(MAX_PARALLEL_QUERIES)
 
 _cassandra_enabled = True
@@ -94,7 +94,7 @@ class AsyncManager:
         _query_parallel_sema.release()
 
     def _handle_failure(self, ex):
-        get_logger().error('query failure', message=ex.message)
+        get_logger().error('query failure', message=ex.args)
         _query_parallel_sema.release()
 
 
@@ -129,7 +129,7 @@ class CassQuoteRepository:
                    ','.join("%s" for _ in FIELDS_Quote))
         batch_statement = BatchStatement()
         for quote in quotes:
-            data = (quote[field] for field in FIELDS_Quote)
+            data = tuple(quote[field] for field in FIELDS_Quote)
             batch_statement.add(query,data)
             if len(batch_statement)>= MAX_BATCH_SIZE:
                 get_async_manager().execute_async(self._session,batch_statement)
@@ -187,7 +187,7 @@ class CassTradesRepository:
                            ','.join("%s" for _ in FIELDS_Quote))
             batch_statement = BatchStatement()
             for trade in trades:
-                data = (trade[field] for field in FIELDS_Trades_min)
+                data = tuple(trade[field] for field in FIELDS_Trades_min)
                 batch_statement.add(query, data)
                 if len(batch_statement) >= MAX_BATCH_SIZE:
                     get_async_manager().execute_async(self._session, batch_statement)
@@ -243,8 +243,8 @@ class CassTradesHistRepository:
         """.format(','.join(FIELDS_Trades),
                    ','.join("%s" for _ in FIELDS_Trades))
         batch_statement = BatchStatement()
-        for trade in trades:
-            data = (trade[field] for field in FIELDS_Trades)
+        for i, trade in trades.iterrows():
+            data = tuple(trade[field] for field in FIELDS_Trades)
             batch_statement.add(query,data)
             if len(batch_statement)>= MAX_BATCH_SIZE:
                 get_async_manager().execute_async(self._session,batch_statement)
