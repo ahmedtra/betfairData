@@ -2,7 +2,7 @@
 from os import listdir
 from os.path import isfile, join
 import pandas as pd
-
+from structlog import get_logger
 from common import safe_move, get_hist_files
 
 from data.cassandra_wrapper.access import CassTradesHistRepository
@@ -24,13 +24,15 @@ class Recorder():
         for filename in files:
             filepath = join(self.path, filename)
 
-            reader = pd.read_csv(filepath, chunksize=10e3, header=0)
+            get_logger().info("starting file", file = filepath)
+            with open(filepath) as f:
+                reader = pd.read_csv(filepath, chunksize=10e3, header=0 ,error_bad_lines=False)
 
-            for rows in reader:
+                for rows in reader:
 
-                data = Recorder.create_data_frame(rows)
+                    data = Recorder.create_data_frame(rows)
 
-                self.record_trade(data)
+                    self.record_trade(data)
 
             file_completed = join(self.path_completed, filename)
 
@@ -47,12 +49,15 @@ class Recorder():
         df_loop = df_loop[df_loop['SPORTS_ID'] == 1]
         df_loop = df_loop[df_loop['FULL_DESCRIPTION'].str.contains("Metalosport") == False]
         df_loop = df_loop[df_loop['FULL_DESCRIPTION'].str.contains("Gremio Nov") == False]
-
+        df_loop['DATE'] = df_loop['SCHEDULED_OFF']
         df_loop['SETTLED_DATE'] = pd.to_datetime(df_loop['SETTLED_DATE'], format='%d-%m-%Y %H:%M:%S',
                                                  errors='coerce').dt.strftime("%Y-%m-%d %H:%M:%S")
+        df_loop['DATE'] = pd.to_datetime(df_loop['DATE'], format='%d-%m-%Y %H:%M',
+                                                 errors='coerce').dt.strftime("%Y-%m-%d 00:00:00Z")
+
         df_loop['SCHEDULED_OFF'] = pd.to_datetime(df_loop['SCHEDULED_OFF'], format='%d-%m-%Y %H:%M',
                                                   errors='coerce').dt.strftime("%Y-%m-%d %H:%M")
-        df_loop['DT ACTUAL_OFF'] = pd.to_datetime(df_loop['DT ACTUAL_OFF'], format='%d-%m-%Y %H:%M:%S',
+        df_loop['DT ACTUAL_OFF'] = pd.to_datetime(df_loop['DT ACTUAL_OFF'], format='%d-%m-%Y %H:%M:%Sselect * from',
                                                   errors='coerce').dt.strftime("%Y-%m-%d %H:%M:%S")
         df_loop['LATEST_TAKEN'] = pd.to_datetime(df_loop['LATEST_TAKEN'], format='%d-%m-%Y %H:%M:%S',
                                                  errors='coerce').dt.strftime("%Y-%m-%d %H:%M:%S")
@@ -68,14 +73,12 @@ class Recorder():
             df_final_desc.loc[i] = Recorder.split_description(df_loop['FULL_DESCRIPTION'].loc[i])
 
         df_loop = pd.concat([df_loop, df_final_desc], axis=1)
-        df_loop = df_loop[['SPORTS_ID', 'EVENT_ID', 'SETTLED_DATE', 'FULL_DESCRIPTION', 'SCHEDULED_OFF', 'EVENT', \
+        df_loop = df_loop[['DATE', 'SPORTS_ID', 'EVENT_ID', 'SETTLED_DATE', 'FULL_DESCRIPTION', 'SCHEDULED_OFF', 'EVENT', \
                            'DT ACTUAL_OFF', 'SELECTION_ID', 'SELECTION', 'ODDS', 'NUMBER_BETS', 'VOLUME_MATCHED', \
                            'LATEST_TAKEN', 'FIRST_TAKEN', 'WIN_FLAG', 'IN_PLAY', 'COMPETITION_TYPE', 'COMPETITION', \
                            'FIXTURES', 'EVENT_NAME', 'MARKET_TYPE']]
 
         df_loop = df_loop.rename(columns = {col:col.lower().replace(" ", "_") for col in df_loop.columns})
-
-
 
         return df_loop
 

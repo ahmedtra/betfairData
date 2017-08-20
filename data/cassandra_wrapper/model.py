@@ -15,7 +15,7 @@ FIELDS_Trades_min= ("market_id","selection_id","status","timestamp",
 
 Trades_min = namedtuple('Trades_min', FIELDS_Trades_min)
 
-FIELDS_Trades= ('sports_id', 'event_id', 'settled_date', 'full_description', 'scheduled_off',
+FIELDS_Trades= ('date', 'sports_id', 'event_id', 'settled_date', 'full_description', 'scheduled_off',
                 'event', 'dt_actual_off', 'selection_id', 'selection', 'odds', 'number_bets',
                 'volume_matched', 'latest_taken', 'first_taken', 'win_flag', 'in_play',
                 'competition_type', 'competition', 'fixtures', 'event_name', 'market_type')
