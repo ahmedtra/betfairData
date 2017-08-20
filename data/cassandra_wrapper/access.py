@@ -91,6 +91,7 @@ class AsyncManager:
         return future
 
     def _handle_success(self, *args):
+
         _query_parallel_sema.release()
 
     def _handle_failure(self, ex):
@@ -265,10 +266,17 @@ class CassTradesHistRepository:
             self._session.row_factory = row_factory
         if fetch_size is not None:
             self._session.default_fetch_size = fetch_size
+            self._session.default_timeout = 60
 
-        result = get_async_manager().execute_async(self._session, query, timeout = 60)
+        result = get_async_manager().execute_async(self._session, query)
 
         return result
+
+    def get_next_page(self, future):
+        _query_parallel_sema.acquire()
+        future.start_fetching_next_page()
+        return future
+
 
     def load_data_events_async(self, event_id, row_factory=None, fetch_size=None):
 

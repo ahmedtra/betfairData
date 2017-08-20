@@ -15,10 +15,11 @@ class Loader():
         return result
 
     def load_data(self, date, row_factory = None):
-        result = self.cass_repository.load_data_async(date, row_factory = row_factory, fetch_size=100000)
-        df = pd.DataFrame()
-        for rows in result.result():
-          df = df.append(rows.current_rows)
+        result = self.cass_repository.load_data_async(date, row_factory = row_factory)
+        df = result.result()._current_rows
+        while result.has_more_pages:
+            result = self.cass_repository.get_next_page(result)
+            df = df.append(result.result()._current_rows)
         return df
 
     def load_data_by_date(self):
