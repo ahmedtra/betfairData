@@ -3,7 +3,7 @@ from structlog import get_logger
 
 import cassandra.cluster
 import cassandra.auth
-from cassandra.query import  BatchStatement
+from cassandra.query import  BatchStatement, tuple_factory
 
 from multiprocessing import BoundedSemaphore
 from data.cassandra_wrapper.model import FIELDS_Quote, FIELDS_Trades, FIELDS_Trades_min
@@ -252,14 +252,14 @@ class CassTradesHistRepository:
         if len(batch_statement) > 0:
             get_async_manager().execute_async(self._session,batch_statement)
 
-    def load_data_async(self, event_id, selection_id, row_factory=None, fetch_size=None):
+    def load_data_async(self, event_id, row_factory=None, fetch_size=None):
 
         query = \
             """
             SELECT *
             FROM trades
-            WHERE event_id = '{}' and selection_id = {}
-            """.format(event_id, str(selection_id))
+            WHERE event_id = {}
+            """.format(event_id)
 
         if row_factory is not None:
             self._session.row_factory = row_factory
@@ -296,6 +296,6 @@ class CassTradesHistRepository:
             SELECT DISTINCT event_id
             FROM trades
             """
-
+        self._session.row_factory = tuple_factory
         result = get_async_manager().execute_async(self._session, query)
-        return result
+        return result.result().current_rows
