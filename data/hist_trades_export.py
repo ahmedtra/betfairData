@@ -57,7 +57,7 @@ class Recorder():
 
         df_loop['SCHEDULED_OFF'] = pd.to_datetime(df_loop['SCHEDULED_OFF'], format='%d-%m-%Y %H:%M',
                                                   errors='coerce').dt.strftime("%Y-%m-%d %H:%M")
-        df_loop['DT ACTUAL_OFF'] = pd.to_datetime(df_loop['DT ACTUAL_OFF'], format='%d-%m-%Y %H:%M:%Sselect * from',
+        df_loop['DT ACTUAL_OFF'] = pd.to_datetime(df_loop['DT ACTUAL_OFF'], format='%d-%m-%Y %H:%M:%S',
                                                   errors='coerce').dt.strftime("%Y-%m-%d %H:%M:%S")
         df_loop['LATEST_TAKEN'] = pd.to_datetime(df_loop['LATEST_TAKEN'], format='%d-%m-%Y %H:%M:%S',
                                                  errors='coerce').dt.strftime("%Y-%m-%d %H:%M:%S")

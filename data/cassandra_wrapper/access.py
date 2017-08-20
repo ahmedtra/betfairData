@@ -252,14 +252,14 @@ class CassTradesHistRepository:
         if len(batch_statement) > 0:
             get_async_manager().execute_async(self._session,batch_statement)
 
-    def load_data_async(self, event_id, row_factory=None, fetch_size=None):
+    def load_data_async(self, date, row_factory=None, fetch_size=None):
 
         query = \
             """
             SELECT *
             FROM trades
-            WHERE event_id = {}
-            """.format(event_id)
+            WHERE date = '{}+0000'
+            """.format(date)
 
         if row_factory is not None:
             self._session.row_factory = row_factory
@@ -289,11 +289,11 @@ class CassTradesHistRepository:
         return result
 
 
-    def get_all_events(self):
+    def get_all_dates(self):
 
         query = \
             """
-            SELECT DISTINCT event_id
+            SELECT DISTINCT date
             FROM trades
             """
         self._session.row_factory = tuple_factory
