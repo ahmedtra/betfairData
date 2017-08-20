@@ -12,7 +12,7 @@ from common import singleton, get_config, process_singleton
 MAX_PARALLEL_QUERIES = 256
 
 QUOTE_SAMPLINGS = ('raw', 'sec', 'sec_shift', 'min', 'hr')
-MAX_BATCH_SIZE = 10
+MAX_BATCH_SIZE = 5
 _query_parallel_sema = BoundedSemaphore(MAX_PARALLEL_QUERIES)
 
 _cassandra_enabled = True
