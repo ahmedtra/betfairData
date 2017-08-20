@@ -266,7 +266,7 @@ class CassTradesHistRepository:
         if fetch_size is not None:
             self._session.default_fetch_size = fetch_size
 
-        result = get_async_manager().execute_async(self._session, query)
+        result = get_async_manager().execute_async(self._session, query, timeout = 60)
 
         return result
 
