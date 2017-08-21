@@ -145,7 +145,7 @@ class DBQuery():
     
     @staticmethod
     def safe_str(s):
-        return s.replace('’', "").replace("ł", "l")
+        return s.replace('’', "").replace("ł", "l").encode('ascii', 'ignore').decode('ascii')
 
 class DBUnderGoalManager():
     def __init__(self, event_type, runner_query):

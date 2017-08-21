@@ -1,5 +1,5 @@
 [files]
-root = C:\BetfairArb\
+root = C:\Users\Betfair\PycharmProjects\betfairData
 certif = certificate
 histdata = HistData
 plot = plot
@@ -26,8 +26,8 @@ keyspace=betfair
 hostname = localhost
 port = 3306
 username = root
-password = root
-db = betfairdb
+password = Betfair
+db = betfair
 
 [json_files]
 root_path = C:\Betfair\decompressed_data

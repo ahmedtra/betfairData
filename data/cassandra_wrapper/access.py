@@ -121,16 +121,17 @@ class CassQuoteRepository:
         :type quote: RTQuote
         """
 
-        query = \
-        """
-        INSERT INTO quote
-        ({})
-        VALUES ({})
-        """.format(','.join(FIELDS_Quote),
-                   ','.join("%s" for _ in FIELDS_Quote))
+
         batch_statement = BatchStatement()
         for quote in quotes:
-            data = tuple(quote[field] for field in FIELDS_Quote)
+            query = \
+                """
+                INSERT INTO quotes
+                ({})
+                VALUES ({})
+                """.format(','.join(quote.keys()),
+                           ','.join("%s" for _ in quote.keys()))
+            data = tuple(quote[field] for field in quote.keys())
             batch_statement.add(query,data)
             if len(batch_statement)>= MAX_BATCH_SIZE:
                 get_async_manager().execute_async(self._session,batch_statement)
@@ -144,7 +145,7 @@ class CassQuoteRepository:
         query = \
         """
         SELECT *
-        FROM quote
+        FROM quotes
         WHERE market_id = '{}' and selection_id = {}
         """.format(market_id, str(selection_id))
 
