@@ -36,7 +36,7 @@ class Recorder():
 
             file_completed = join(self.path_completed, filename)
 
-            # safe_move(filepath, file_completed)
+            safe_move(filepath, file_completed)
 
     def record_trade(self, data):
         self.cass_repository.save_async(data)
