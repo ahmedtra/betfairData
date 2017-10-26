@@ -21,7 +21,7 @@ def process_day(df_all):
                                                "event_name" , "1", "x", "2" , "vol_1", "vol_x", "vol_2", "bet_1",
                                                "bet_x", "bet_2", "favorite_odd", "favorite_flag", "winner",
                                                "IP_1", "IP_x", "IP_2"])
-    
+
     return df_sql
 
 def split_team(s, i):
