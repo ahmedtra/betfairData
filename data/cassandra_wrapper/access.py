@@ -306,5 +306,11 @@ class CassTradesHistRepository:
             FROM trades
             """
         self._session.row_factory = tuple_factory
+        self._session.default_fetch_size = 300
         result = get_async_manager().execute_async(self._session, query)
-        return result.result().current_rows
+        dates = result.result().current_rows
+        while result.has_more_pages:
+            result = self.get_next_page(result)
+            dates = dates + result.result()._current_rows
+
+        return dates

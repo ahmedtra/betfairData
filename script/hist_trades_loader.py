@@ -2,7 +2,8 @@ from data.hist_trades_loader import Loader
 
 
 import pandas as pd
-
+from pandas.io import sql
+import MySQLdb
 
 def process_day(df_all):
     df_all = df_all[df_all['event'].str.contains('Over/Under ')]
@@ -111,8 +112,13 @@ def get_OverUnder(df): # To be called on 1 game only (pass a dataframe containin
 
 if __name__ == "__main__":
 
+
+    con = MySQLdb.connect()
     data_loader = Loader()
     result = data_loader.load_data_by_date()
+    i = 0
     for data in result:
-        df_OverUnder, N_Goals =process_day(data)
-        df_OverUnder.to_csv('test_data.xlsx')
+        i+=1
+        df =process_day(data)
+        df.to_sql(con = con, name = "favorite", if_exists = "append", flavor = "mysql")
+        df.to_csv('data'+str(i)+'.csv')

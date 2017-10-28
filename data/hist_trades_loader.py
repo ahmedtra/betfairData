@@ -31,9 +31,10 @@ class Loader():
         dates = self.cass_repository.get_all_dates()
         previous_data = None
         for date, in dates:
+            print(date)
             if previous_data is None:
                 previous_data = self.load_df_data_date(date)
                 continue
-            previous_data_future = self.executor.submit(self.load_data_by_date, date)
+            previous_data_future = self.executor.submit(self.load_data, date)
             yield previous_data
             previous_data = previous_data_future.result()
