@@ -34,5 +34,5 @@ root_path = C:\Betfair\decompressed_data
 completed = C:\Betfair\completed_data
 
 [hist_files]
-root_path = E:\Betfair Data Archive 2013\
+root_path = E:\Betfair Data Archive\
 completed = E:\completed
