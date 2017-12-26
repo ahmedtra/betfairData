@@ -59,6 +59,9 @@ class Strategies(Base):
     name = Column(String)
     id_index = Column(Integer)
     type_index = Column(Enum("event", "market", "runner"))
+    event = Column(String)
+    event_name = Column(String)
+    strategy = Column(String)
 
 class Orders(Base):
     __tablename__  = "orders"
@@ -70,4 +73,6 @@ class Orders(Base):
     market_id = Column(Integer)
     price = Column(Float)
     executed = Column(Float)
+    ref = Column(String)
+    state = Column(String)
 

@@ -1,5 +1,5 @@
 [files]
-root = C:\Users\Betfair\PycharmProjects\betfairData
+root = C:\BetfairArb\
 certif = certificate
 histdata = HistData
 plot = plot

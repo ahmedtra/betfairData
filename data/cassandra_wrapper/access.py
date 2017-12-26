@@ -12,7 +12,7 @@ from common import singleton, get_config, process_singleton
 MAX_PARALLEL_QUERIES = 256
 
 QUOTE_SAMPLINGS = ('raw', 'sec', 'sec_shift', 'min', 'hr')
-MAX_BATCH_SIZE = 5
+MAX_BATCH_SIZE = 2
 _query_parallel_sema = BoundedSemaphore(MAX_PARALLEL_QUERIES)
 
 _cassandra_enabled = True
@@ -185,8 +185,8 @@ class CassTradesRepository:
                 INSERT INTO trades_min
                 ({})
                 VALUES ({})
-                """.format(','.join(FIELDS_Trades),
-                           ','.join("%s" for _ in FIELDS_Quote))
+                """.format(','.join(FIELDS_Trades_min),
+                           ','.join("%s" for _ in FIELDS_Trades_min))
             batch_statement = BatchStatement()
             for trade in trades:
                 data = tuple(trade[field] for field in FIELDS_Trades_min)
@@ -197,14 +197,14 @@ class CassTradesRepository:
             if len(batch_statement) > 0:
                 get_async_manager().execute_async(self._session, batch_statement)
 
-        def load_data_async(self, market_id, selection_id, row_factory=None, fetch_size=None):
+        def load_data_async(self, date, row_factory=None, fetch_size=None):
 
             query = \
                 """
                 SELECT *
-                FROM tradesmin
-                WHERE market_id = '{}' and selection_id = {}
-                """.format(market_id, str(selection_id))
+                FROM trades_min
+                WHERE date = {}
+                """.format(date)
 
             if row_factory is not None:
                 self._session.row_factory = row_factory
