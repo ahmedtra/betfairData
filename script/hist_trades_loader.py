@@ -8,16 +8,22 @@ import pandas as pd
 from pandas.io import sql
 import MySQLdb
 
+
+columns = ["scheduled_off","Goals_1", "Goals_2", "NGoals", "full_description", "competition", "competition_type",
+                                               "event_name" , "Over 0.5 Goals", "Under 0.5 Goals",
+                                               "Under 1.5 Goals", "Under 2.5 Goals", "Under 3.5 Goals" ,
+                                               "Under 4.5 Goals", "Under 5.5 Goals", "Under 6.5 Goals" ,
+                                               "Under 7.5 Goals","Under 8.5 Goals"]
+
 def process_day(df_all):
     df_goals = df_all[df_all['event'].str.contains('Over/Under ')]
     df_score = df_all[df_all['event']== 'Correct Score']
     games_list = df_goals['event_name'].unique().tolist()
     print(games_list)
     print('#games = '+str(len(games_list)))
-    df_OverUnder = pd.DataFrame()
+    df_OverUnder = pd.DataFrame(columns=columns)
 
     for ind,game in enumerate(games_list):
-
             df_g = get_OverUnder(df_goals[df_goals['event_name']==game], df_score[df_score['event_name']==game])
             df_OverUnder = pd.concat([df_OverUnder,df_g])
 
@@ -96,15 +102,22 @@ def get_OverUnder(df, df_score): # To be called on 1 game only (pass a dataframe
     df_0 = df.copy()
     df_0 = df_0[df_0['event']=='Over/Under 0.5 Goals']
     df_0 = df_0[df_0['selection']=='Under 0.5 Goals']
+    df_pe = df_0[df_0['in_play'] == 'PE']
     df_0 = df_0[df_0['in_play']=='IP']
 
     if len(df_0) == 0:
-        df_0 = df.iloc[0:2]
-        df_0["odds"] = 1001
-        df_0["latest_taken"] = 1001
+        if len(df_pe) == 0:
+            df_0 = df.iloc[0:2]
+            df_0['event'] = 'Over/Under 0.5 Goals'
+            df_0['selection'] = 'Under 0.5 Goals'
+            df_0["odds"] = 1001
+            df_0["first_taken"] = 1001
+        else:
+            df_0 = df_pe.copy()
+            df_0 = df_0.sort_values("latest_taken").iloc[[0,-1]]
 
     df_0 = pd.pivot_table(df_0,values=['odds'], \
-              index=['competition_type', 'competition', 'event_name', 'scheduled_off', 'latest_taken'], \
+              index=['competition_type', 'competition', 'event_name', 'scheduled_off', 'first_taken','full_description'], \
               columns=['selection'])
     # print(df_0)
 
@@ -119,7 +132,7 @@ def get_OverUnder(df, df_score): # To be called on 1 game only (pass a dataframe
             df_aux = df_aux[df_aux['selection'] == selection_list[i]]
             df_aux = df_aux[df_aux['in_play'] == 'IP']
             df_aux = pd.pivot_table(df_aux, values=['odds'],\
-                index=['competition_type', 'competition', 'event_name','scheduled_off','latest_taken'],\
+                index=['competition_type', 'competition', 'event_name','scheduled_off','first_taken','full_description'],\
                                   columns=['selection'])
             df_aux = df_aux[df_aux.index.levels[4] > df_temp.iloc[-1].name[4]]
             df_aux = df_aux.iloc[[df_aux.reset_index()['odds'].idxmax()[0], -1]]
@@ -129,15 +142,30 @@ def get_OverUnder(df, df_score): # To be called on 1 game only (pass a dataframe
             df_tot = df_tot.merge(df_aux)
         except:
             pass
+    try:
+        df_tot = df_tot.iloc[[0,-1]].reset_index(drop=True)
 
-    df_tot = df_tot.iloc[[0,-1]].reset_index(drop=True)
-    df_tot['NGoals'] = get_Goals(df)
+        # Remove multi indexing
+        mi = df_tot.columns
+        cols = pd.Index([e[0] + e[1] for e in mi.tolist()])
+        cols = [c.replace('odds', '') for c in cols]
+        df_tot.columns = cols
 
-    score = get_Score(df_score)
-    df_tot['Goals_1'] = score[0]
-    df_tot['Goals_2'] = score[1]
-    #
-    # print(df_tot)
+        round_2 = lambda x :round(x,2)
+        l = ['Under 0.5 Goals'] + selection_list
+        col_under = [col for col in df_tot.columns if col in l]
+        print(col_under)
+        df_tot[col_under].apply(round_2)
+
+        df_tot['NGoals'] = get_Goals(df)
+
+        score = get_Score(df_score)
+        df_tot['Goals_1'] = score[0]
+        df_tot['Goals_2'] = score[1]
+
+        print(df_tot)
+    except:
+        print("Error on: " + str(df_0['event_name'].iloc[0]))
 
     return df_tot
 
@@ -155,5 +183,5 @@ if __name__ == "__main__":
     for data in result:
         i+=1
         df =process_day(data)
-        df.to_sql(con = engine, name = "goals", if_exists = "append", flavor = "mysql")
-        df.to_csv('data'+str(i)+'.csv')
+        df.to_sql(con = engine, name = "over_under", if_exists = "append")
+        df.to_csv('over_under'+str(i)+'.csv')
