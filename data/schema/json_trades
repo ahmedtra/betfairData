@@ -4,7 +4,7 @@ CREATE TABLE betfair.trades_min (
 	timestamp timestamp,
 	betting_type text,
 	country_code text,
-	event_id int,
+	event_id text,
 	inplay boolean,
 	ltp float,
 	market_id text,
