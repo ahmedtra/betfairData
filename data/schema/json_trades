@@ -1,0 +1,22 @@
+CREATE TABLE betfair.trades_min (
+	date timestamp,
+	event_name text,
+	timestamp timestamp,
+	betting_type text,
+	country_code text,
+	event_id int,
+	inplay boolean,
+	ltp float,
+	market_id text,
+	market_start_time timestamp,
+	market_type text,
+	open_date timestamp,
+	runner_name text,
+	selection_id int,
+	sort_priority int,
+	status text,
+	status_market text,
+	timezone text,
+	type text,
+	PRIMARY KEY (date, event_name, timestamp)
+)
