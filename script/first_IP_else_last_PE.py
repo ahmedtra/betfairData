@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 
 def split_team(s, i):
     if isinstance(s, str):
@@ -10,7 +12,7 @@ def split_team(s, i):
         return None
 
 
-def get_MatchOdds_first_IP_else_last_PE(df, game): # To be called on 1 game only (pass a dataframe containing 1 match only)
+def get_MatchOdds_first_IP_else_last_PE(df, game, minutes_ahead): # To be called on 1 game only (pass a dataframe containing 1 match only)
 
     team1 = split_team(game, 0)
     team2 = split_team(game, 1)
@@ -41,7 +43,7 @@ def get_MatchOdds_first_IP_else_last_PE(df, game): # To be called on 1 game only
     df_ip = df.sort_values("first_taken")
     df_ip = df_ip[df_ip["in_play"] == "IP"].groupby("selection").first()
 
-    df_pe = df[df["latest_taken"] < dt_actual_off]
+    df_pe = df[df["latest_taken"] < dt_actual_off - timedelta(minutes=minutes_ahead)]
     df_pe = df_pe.sort_values("latest_taken")
     df_pe = df_pe[df_pe["in_play"] == "PE"]
     grouped_df = df_pe.groupby("selection")
@@ -110,7 +112,7 @@ def get_MatchOdds_first_IP_else_last_PE(df, game): # To be called on 1 game only
 
 
 
-def get_MatchOdds_last_PE_else_first_IP(df, game): # To be called on 1 game only (pass a dataframe containing 1 match only)
+def get_MatchOdds_last_PE_else_first_IP(df, game, minutes_ahead): # To be called on 1 game only (pass a dataframe containing 1 match only)
 
     team1 = split_team(game, 0)
     team2 = split_team(game, 1)
@@ -141,7 +143,7 @@ def get_MatchOdds_last_PE_else_first_IP(df, game): # To be called on 1 game only
     df_ip = df.sort_values("first_taken")
     df_ip = df_ip[df_ip["in_play"] == "IP"].groupby("selection").first()
 
-    df_pe = df[df["latest_taken"] < dt_actual_off]
+    df_pe = df[df["latest_taken"] < dt_actual_off - timedelta(minutes=minutes_ahead)]
     df_pe = df_pe.sort_values("latest_taken")
     df_pe = df_pe[df_pe["in_play"] == "PE"]
     grouped_df = df_pe.groupby("selection")

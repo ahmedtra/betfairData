@@ -16,7 +16,7 @@ columns = ["dt_actual_off", "scheduled_off", "full_description", "competition", 
                                                "IP_1", "IP_x", "IP_2", "min_from_start_1", "min_from_start_x",
                                                "min_from_start_2", "vm_pe_1", "vm_pe_x", "vm_pe_2"]
 
-def process_day(df_all, get_MatchOdds):
+def process_day(df_all, get_MatchOdds, minutes_ahead = 0):
     df_all = df_all[df_all['event'].str.contains('Match Odds')]
     if len(df_all) == 0:
         return pd.DataFrame(columns = columns)
@@ -31,7 +31,7 @@ def process_day(df_all, get_MatchOdds):
         try:
             get_logger().info("match", match = game, date = date)
             Match_fields = df_all[df_all['event_name']==game]
-            row = get_MatchOdds(Match_fields, game)
+            row = get_MatchOdds(Match_fields, game, minutes_ahead)
             all_rows.append(row)
         except Exception:
             get_logger().error(traceback.format_exc())
@@ -53,10 +53,14 @@ if __name__ == "__main__":
     for data in result:
         i+=1
         try:
-            df = process_day(data, first_IP_else_last_PE.get_MatchOdds_first_IP_else_last_PE)
-            df.to_sql(con = engine, name = "favorite_first_IP_last_PE", if_exists = "append")
-            df = process_day(data, first_IP_else_last_PE.get_MatchOdds_last_PE_else_first_IP)
-            df.to_sql(con = engine, name = "favorite_last_PE_first_IP", if_exists = "append")
+            # df = process_day(data, first_IP_else_last_PE.get_MatchOdds_first_IP_else_last_PE)  # 8/11/2017
+            # df.to_sql(con = engine, name = "favorite_first_IP_last_PE", if_exists = "append")
+            # df = process_day(data, first_IP_else_last_PE.get_MatchOdds_last_PE_else_first_IP)  # 8/11/2017
+            # df.to_sql(con = engine, name = "favorite_last_PE_first_IP", if_exists = "append")
+            df = process_day(data, first_IP_else_last_PE.get_MatchOdds_last_PE_else_first_IP, minutes_ahead=60) # 11/11/2017
+            df.to_sql(con = engine, name = "favorite_last_PE_1_hour_ahead_first_IP", if_exists = "append")
+            df = process_day(data, first_IP_else_last_PE.get_MatchOdds_last_PE_else_first_IP, minutes_ahead=120) # 11/11/2017
+            df.to_sql(con = engine, name = "favorite_last_PE_2_hour_ahead_first_IP", if_exists = "append")
             # df.to_csv('data'+str(i)+'.csv')
         except:
             get_logger().error(traceback.format_exc())
