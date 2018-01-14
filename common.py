@@ -116,3 +116,6 @@ def safe_move(src, dst):
         return dst
     else:
         return safe_move(src, dst + "_")
+
+def safe_delete(src):
+    os.remove(src)

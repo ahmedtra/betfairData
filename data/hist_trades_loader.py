@@ -2,13 +2,17 @@ from concurrent.futures import ThreadPoolExecutor
 
 import pandas as pd
 
-from data.cassandra_wrapper.access import CassTradesHistRepository
+from data.cassandra_wrapper.access import CassTradesHistRepository, CassTradesRepository
 from data.sql_wrapper.query import RunnerMapQuery
 
 
 class Loader():
-    def __init__(self):
-        self.cass_repository = CassTradesHistRepository()
+    def __init__(self, type):
+        if type == "old":
+            self.cass_repository = CassTradesHistRepository()
+        elif type == "json":
+            self.cass_repository = CassTradesRepository()
+
         self.query_secdb = RunnerMapQuery()
         self.executor = ThreadPoolExecutor(max_workers=2)
 

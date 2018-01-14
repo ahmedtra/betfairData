@@ -30,8 +30,8 @@ password = Betfair
 db = betfair
 
 [json_files]
-root_path = C:\Betfair\decompressed_data
-completed = C:\Betfair\completed_data
+root_path = E:\Json
+completed = E:\Json_completed
 
 [hist_files]
 root_path = E:\Betfair Data Archive\

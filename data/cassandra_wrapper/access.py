@@ -160,60 +160,82 @@ class CassQuoteRepository:
 
 class CassTradesRepository:
 
-        def __init__(self, session=None):
+    def __init__(self, session=None):
+        """
+        :type session: cassandra.cluster.Session
+        """
+        self._session = session or get_cassandra_session()
+
+    # __getstate__ and __setstate__ allow pickling
+
+    def __getstate__(self):
+        return ()
+
+    def __setstate__(self, trades):
+        self.__init__()
+
+    def save_async(self, trades):
+        """
+        :type entry_type: str
+        :type quote: RTQuote
+        """
+
+        query = \
             """
-            :type session: cassandra.cluster.Session
-            """
-            self._session = session or get_cassandra_session()
-
-        # __getstate__ and __setstate__ allow pickling
-
-        def __getstate__(self):
-            return ()
-
-        def __setstate__(self, trades):
-            self.__init__()
-
-        def save_async(self, trades):
-            """
-            :type entry_type: str
-            :type quote: RTQuote
-            """
-
-            query = \
-                """
-                INSERT INTO trades_min
-                ({})
-                VALUES ({})
-                """.format(','.join(FIELDS_Trades_min),
-                           ','.join("%s" for _ in FIELDS_Trades_min))
-            batch_statement = BatchStatement()
-            for trade in trades:
-                data = tuple(trade[field] for field in FIELDS_Trades_min)
-                batch_statement.add(query, data)
-                if len(batch_statement) >= MAX_BATCH_SIZE:
-                    get_async_manager().execute_async(self._session, batch_statement)
-                    batch_statement = BatchStatement()
-            if len(batch_statement) > 0:
+            INSERT INTO trades_min
+            ({})
+            VALUES ({})
+            """.format(','.join(FIELDS_Trades_min),
+                       ','.join("%s" for _ in FIELDS_Trades_min))
+        batch_statement = BatchStatement()
+        for trade in trades:
+            data = tuple(trade[field] for field in FIELDS_Trades_min)
+            batch_statement.add(query, data)
+            if len(batch_statement) >= MAX_BATCH_SIZE:
                 get_async_manager().execute_async(self._session, batch_statement)
+                batch_statement = BatchStatement()
+        if len(batch_statement) > 0:
+            get_async_manager().execute_async(self._session, batch_statement)
 
-        def load_data_async(self, date, row_factory=None, fetch_size=None):
+    def load_data_async(self, date, row_factory=None, fetch_size=None):
 
-            query = \
-                """
-                SELECT *
-                FROM trades_min
-                WHERE date = {}
-                """.format(date)
+        query = \
+            """
+             SELECT *
+             FROM trades_min
+             WHERE date = '{}+0000'
+             """.format(date)
 
-            if row_factory is not None:
-                self._session.row_factory = row_factory
-            if fetch_size is not None:
-                self._session.default_fetch_size = fetch_size
+        if row_factory is not None:
+            self._session.row_factory = row_factory
+        if fetch_size is not None:
+            self._session.default_fetch_size = fetch_size
 
-            result = get_async_manager().execute_async(self._session, query)
+        result = get_async_manager().execute_async(self._session, query)
 
-            return result
+        return result
+
+    def get_next_page(self, future):
+        _query_parallel_sema.acquire()
+        future.start_fetching_next_page()
+        return future
+
+    def get_all_dates(self):
+
+        query = \
+            """
+            SELECT DISTINCT date
+            FROM trades_min
+            """
+        self._session.row_factory = tuple_factory
+        self._session.default_fetch_size = 300
+        result = get_async_manager().execute_async(self._session, query)
+        dates = result.result().current_rows
+        while result.has_more_pages:
+            result = self.get_next_page(result)
+            dates = dates + result.result()._current_rows
+
+        return dates
 
 
 class CassTradesHistRepository:
@@ -296,7 +318,6 @@ class CassTradesHistRepository:
         result = get_async_manager().execute_async(self._session, query)
 
         return result
-
 
     def get_all_dates(self):
 

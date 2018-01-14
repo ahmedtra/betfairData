@@ -1,16 +1,16 @@
 from betfair.constants import PriceData, MarketProjection
 from betfair.models import PriceProjection, MarketFilter
-from datetime import datetime
+from datetime import datetime, date
 from time import sleep
 from os import listdir, scandir
 from os.path import isfile, join
 import pandas as pd
 import json
-from common import safe_move, get_json_files_dirs
+from common import safe_move, get_json_files_dirs, safe_delete
 
 from data.cassandra_wrapper.access import CassTradesRepository
-from data.sql_wrapper.query import DBQuery
 
+import multiprocessing
 
 class Recorder():
     def __init__(self):
@@ -21,14 +21,35 @@ class Recorder():
         self.cass_repository = CassTradesRepository()
         #self.query_secdb = DBQuery()
 
-    def read_json_files(self):
+    def file_generator(self, chunk = 8):
         def loop_files(path):
             for file in scandir(path):
                 if isfile(join(path, file)):
                     yield file
 
-
+        i = 0
+        l = []
         for filename in loop_files(self.path):
+            filepath = join(self.path, filename)
+            l.append(filepath)
+            i += 1
+            if i == chunk:
+                yield l
+                i = 0
+                l = []
+
+
+    def read_json_files(self):
+        for filenames in self.file_generator():
+            jobs = []
+            for files in filenames:
+                p = multiprocessing.Process(target=self.process_json_file, args=(files, ))
+                jobs.append(p)
+                p.start()
+            for p in jobs:
+                p.join()
+
+    def process_json_file(self, filename):
             filepath = join(self.path, filename)
 
             market_def = {}
@@ -41,14 +62,19 @@ class Recorder():
                 if "marketDefinition" in list(json_file["mc"][0].keys()):
                     market_def = json_file["mc"][0]["marketDefinition"]
                     market_def["market_id"] = json_file["mc"][0]["id"]
-                    market_def["start_time"] = datetime.strptime(market_def["marketTime"], "%Y-%m-%dT%H:%M:%S.%fZ")
-                    market_def["date"] = market_def["start_time"].date()
+                    if "start_time" in market_def.keys() and "date" not in market_def.keys():
+                        market_def["date"] = market_def["start_time"].date()
+
                     market_def["open_date"] = datetime.strptime(market_def["openDate"], "%Y-%m-%dT%H:%M:%S.%fZ")
                     if "runners" in market_def.keys():
                         for runner in market_def["runners"]:
                             runners[runner["id"]] = runner
                     if "countryCode" not in market_def.keys():
                         market_def["countryCode"] = None
+                    if "marketTime" not in market_def.keys():
+                        market_def["marketTime"] = None
+                    else:
+                        market_def["start_time"] = datetime.strptime(market_def["marketTime"], "%Y-%m-%dT%H:%M:%S.%fZ")
                     if "timezone" not in market_def.keys():
                         market_def["timezone"] = None
                     if "bettingType" not in market_def.keys():
@@ -71,6 +97,9 @@ class Recorder():
                         data["sort_priority"] = runners[ltp["id"]]["sortPriority"]
                         data["status"] = runners[ltp["id"]]["status"]
                         data["inplay"] = market_def["inPlay"]
+                    if "date" not in market_def.keys():
+                        date_start_day = datetime.fromtimestamp(json_file["pt"] / 1000).date()
+                        market_def["date"] = datetime(date_start_day.year, date_start_day.month, date_start_day.day)
                     data["date"] = market_def["date"]
                     data["timestamp"] = datetime.fromtimestamp(json_file["pt"] / 1000)
                     data["market_start_time"] = market_def["start_time"]
@@ -88,9 +117,11 @@ class Recorder():
 
             # self.query_secdb.commit_changes()
 
-            file_completed = join(self.path_completed, filename)
+            # file_completed = join(self.path_completed, filename.name)
 
-            safe_move(filepath, file_completed)
+            safe_delete(filepath)
+
+            # safe_move(filepath, file_completed)
 
     def record_trade(self, data):
         self.cass_repository.save_async(data)
