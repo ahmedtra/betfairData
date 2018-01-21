@@ -30,7 +30,7 @@ password = Betfair
 db = betfair
 
 [json_files]
-root_path = E:\Json
+root_path = E:\JJSON
 completed = E:\Json_completed
 
 [hist_files]

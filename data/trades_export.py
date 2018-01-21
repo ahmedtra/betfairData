@@ -10,7 +10,7 @@ from common import safe_move, get_json_files_dirs, safe_delete
 
 from data.cassandra_wrapper.access import CassTradesRepository
 
-import multiprocessing
+# import multiprocessing
 
 class Recorder():
     def __init__(self):
@@ -20,37 +20,40 @@ class Recorder():
         self.path_completed = dir_completed
         self.cass_repository = CassTradesRepository()
         #self.query_secdb = DBQuery()
+    #
+    # def file_generator(self, chunk = 8):
+    #     def loop_files(path):
+    #         for file in scandir(path):
+    #             if isfile(join(path, file)):
+    #                 yield file
+    #
+    #     i = 0
+    #     l = []
+    #     for filename in loop_files(self.path):
+    #         filepath = join(self.path, filename)
+    #         l.append(filepath)
+    #         i += 1
+    #         if i == chunk:
+    #             yield l
+    #             i = 0
+    #             l = []
+    #
+    #
+    # def read_json_files(self):
+    #     for filenames in self.file_generator():
+    #         jobs = []
+    #         for files in filenames:
+    #             p = multiprocessing.Process(target=self.process_json_file, args=(files, ))
+    #             jobs.append(p)
+    #             p.start()
+    #         for p in jobs:
+    #             p.join()
 
-    def file_generator(self, chunk = 8):
-        def loop_files(path):
-            for file in scandir(path):
-                if isfile(join(path, file)):
-                    yield file
-
-        i = 0
-        l = []
-        for filename in loop_files(self.path):
-            filepath = join(self.path, filename)
-            l.append(filepath)
-            i += 1
-            if i == chunk:
-                yield l
-                i = 0
-                l = []
-
-
-    def read_json_files(self):
-        for filenames in self.file_generator():
-            jobs = []
-            for files in filenames:
-                p = multiprocessing.Process(target=self.process_json_file, args=(files, ))
-                jobs.append(p)
-                p.start()
-            for p in jobs:
-                p.join()
-
-    def process_json_file(self, filename):
-            filepath = join(self.path, filename)
+    def process_json_file(self, filename, file_path = False):
+            if not file_path:
+                filepath = join(self.path, filename)
+            else:
+                filepath = filename
 
             market_def = {}
 
@@ -96,7 +99,10 @@ class Recorder():
                         data["runner_name"] = runners[ltp["id"]]["name"]
                         data["sort_priority"] = runners[ltp["id"]]["sortPriority"]
                         data["status"] = runners[ltp["id"]]["status"]
-                        data["inplay"] = market_def["inPlay"]
+                        if "inPlay" not in market_def.keys():
+                            data["inplay"] = False
+                        else:
+                            data["inplay"] = market_def["inPlay"]
                     if "date" not in market_def.keys():
                         date_start_day = datetime.fromtimestamp(json_file["pt"] / 1000).date()
                         market_def["date"] = datetime(date_start_day.year, date_start_day.month, date_start_day.day)

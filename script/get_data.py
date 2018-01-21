@@ -10,7 +10,7 @@ if __name__ == "__main__":
     data_loader = Loader("json")
     result = data_loader.load_data_by_date()
     df = pd.DataFrame()
-    dates = [datetime.date(2015,5,d) for d in range(10, 15)]
+    dates = [datetime.date(2015,10,d) for d in range(1, 5)]
 
     for date in dates:
         data = data_loader.load_df_data_date(date)

@@ -6,7 +6,7 @@ import multiprocessing
 from common import safe_delete
 
 dirpath = "C:\\Users\\ahmed\\Downloads\\Sites\\xdw\\api\\fd39b9c4-dee9-44ca-a7f5-81d74fc3f711"
-outputpath = "E:\Json"
+outputpath = "E:\JJSON"
 
 
 # files = [f for f in listdir(dirpath) if isfile(join(dirpath, f))]

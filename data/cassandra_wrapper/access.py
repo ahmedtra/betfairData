@@ -182,7 +182,7 @@ class CassTradesRepository:
 
         query = \
             """
-            INSERT INTO trades_min
+            INSERT INTO trades_min_new
             ({})
             VALUES ({})
             """.format(','.join(FIELDS_Trades_min),
@@ -202,7 +202,7 @@ class CassTradesRepository:
         query = \
             """
              SELECT *
-             FROM trades_min
+             FROM trades_min_new
              WHERE date = '{}+0000'
              """.format(date)
 
@@ -225,7 +225,7 @@ class CassTradesRepository:
         query = \
             """
             SELECT DISTINCT date
-            FROM trades_min
+            FROM trades_min_new
             """
         self._session.row_factory = tuple_factory
         self._session.default_fetch_size = 300
