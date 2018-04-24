@@ -37,7 +37,7 @@ while True:
     ax.axis('off')
     tabla = table(ax, df, loc='center')
     tabla.auto_set_font_size(False)
-    tabla.set_fontsize(12)
+    tabla.set_fontsize(11)
     tabla.scale(1.1, 2.5)
     plt.savefig(directory_png)
 
@@ -59,7 +59,7 @@ while True:
 
     newMail.Display()
 
-    newMail.Send()
+    # newMail.Send()
 
     time.sleep(6*60*60)
 
