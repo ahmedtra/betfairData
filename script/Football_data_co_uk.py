@@ -91,7 +91,7 @@ def create_data_frame(data,country,competition):
 # Push Data in SQL Database Table: Football_data_co_uk
 # ----------------------------------------------------------------------------------------------------------------------
 
-def write_to_sql(dataframe, tablename='Football_data_co_uk'):
+def write_to_sql(dataframe, tablename='Football_data_co_uk',):
     pd_sql.to_sql(dataframe, tablename, conn, if_exists='append',index=False)
 
 
@@ -100,18 +100,18 @@ def write_to_sql(dataframe, tablename='Football_data_co_uk'):
 # Print import Status
 # ----------------------------------------------------------------------------------------------------------------------
 
-  if __name__ == "__main__":
-    conn = sa.create_engine("mysql://root:Betfair@localhost/betfair?host=localhost?port=3306", convert_unicode=True)
-    files_list = []
+if __name__ == "__main__":
+        conn = sa.create_engine("mysql://root:Betfair@localhost/betfair?host=localhost?port=3306", convert_unicode=True)
+        files_list = []
 
-    for subdir, dirs, files in os.walk('E:\\Football_data.co.uk\\'):
-        print(files)
-        for f in files:
-            files_list.append('E:\\Football_data.co.uk\\'+f)
-            print(f)
-            country = f.split('_')[0]
-            competition = f.split('_')[1]
-            print('country: '+country)
-            print('competition: '+competition)
-            data = 'E:\\Football_data.co.uk\\'+f
-            create_data_frame(data, country, competition)
+for subdir, dirs, files in os.walk('E:\\Football_data.co.uk\\'):
+    print(files)
+    for f in files:
+        files_list.append('E:\\Football_data.co.uk\\'+f)
+        print(f)
+        country = f.split('_')[0]
+        competition = f.split('_')[1]
+        print('country: '+country)
+        print('competition: '+competition)
+        data = 'E:\\Football_data.co.uk\\'+f
+        create_data_frame(data, country, competition)

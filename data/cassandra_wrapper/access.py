@@ -6,13 +6,14 @@ import cassandra.auth
 from cassandra.query import  BatchStatement, tuple_factory
 
 from multiprocessing import BoundedSemaphore
-from data.cassandra_wrapper.model import FIELDS_Quote, FIELDS_Trades, FIELDS_Trades_min
+from data.cassandra_wrapper.model import FIELDS_Quote, FIELDS_Trades, FIELDS_Trades_min, FIELDS_Trades_over_under, \
+    FIELDS_Trades_over_under_basic
 from common import singleton, get_config, process_singleton
 
 MAX_PARALLEL_QUERIES = 256
 
 QUOTE_SAMPLINGS = ('raw', 'sec', 'sec_shift', 'min', 'hr')
-MAX_BATCH_SIZE = 2
+MAX_BATCH_SIZE = 10
 _query_parallel_sema = BoundedSemaphore(MAX_PARALLEL_QUERIES)
 
 _cassandra_enabled = True
@@ -325,6 +326,101 @@ class CassTradesHistRepository:
             """
             SELECT DISTINCT date
             FROM trades
+            """
+        self._session.row_factory = tuple_factory
+        self._session.default_fetch_size = 300
+        result = get_async_manager().execute_async(self._session, query)
+        dates = result.result().current_rows
+        while result.has_more_pages:
+            result = self.get_next_page(result)
+            dates = dates + result.result()._current_rows
+
+        return dates
+
+
+
+class CassTradesOVERUNDERRepository:
+
+    def __init__(self, session=None):
+        """
+        :type session: cassandra.cluster.Session
+        """
+        self._session = session or get_cassandra_session()
+
+    # __getstate__ and __setstate__ allow pickling
+
+    def __getstate__(self):
+        return ()
+
+    def __setstate__(self, trades):
+        self.__init__()
+
+    def save_async(self, trades, base):
+        """
+        :type entry_type: str
+        :type quote: RTQuote
+        """
+        if "basic" in base:
+            fields = FIELDS_Trades_over_under_basic
+        else :
+            fields = FIELDS_Trades_over_under
+        query = \
+            """
+            INSERT INTO over_under_{}
+            ({})
+            VALUES ({})
+            """.format(base,
+                       ','.join(fields),
+                       ','.join("%s" for _ in fields))
+        batch_statement = BatchStatement()
+        for i, trade in trades.iterrows():
+            data = tuple(trade[field] for field in fields)
+            batch_statement.add(query, data)
+            if len(batch_statement) >= MAX_BATCH_SIZE:
+                get_async_manager().execute_async(self._session, batch_statement)
+                batch_statement = BatchStatement()
+        if len(batch_statement) > 0:
+            get_async_manager().execute_async(self._session, batch_statement)
+
+    def load_data_async(self, runner_name, event_name = None, base = "basic_min", row_factory=None, fetch_size=None):
+
+        if event_name:
+            query = \
+                """
+                 SELECT *
+                 FROM over_under_{}
+                 WHERE runner_name = '{}'
+                 and event_name ='{}'
+                 """.format(base, runner_name, event_name)
+
+        else:
+            query = \
+                """
+                 SELECT *
+                 FROM over_under_{}
+                 WHERE runner_name = '{}'
+                 """.format(base, runner_name)
+
+        if row_factory is not None:
+            self._session.row_factory = row_factory
+        if fetch_size is not None:
+            self._session.default_fetch_size = fetch_size
+
+        result = get_async_manager().execute_async(self._session, query)
+
+        return result
+
+    def get_next_page(self, future):
+        _query_parallel_sema.acquire()
+        future.start_fetching_next_page()
+        return future
+
+    def get_all_dates(self):
+
+        query = \
+            """
+            SELECT DISTINCT date
+            FROM trades_min_new
             """
         self._session.row_factory = tuple_factory
         self._session.default_fetch_size = 300

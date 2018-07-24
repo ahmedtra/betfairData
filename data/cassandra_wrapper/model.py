@@ -14,6 +14,19 @@ FIELDS_Trades_min= ("date","event_name","timestamp","market_id","selection_id",
 "open_date","betting_type","market_type","event_id",
 "status_market")
 
+FIELDS_Trades_over_under= ("batb_price_0","batb_price_1","batb_price_2","batb_volume_0","batb_volume_1",
+"batb_volume_2","batl_price_0","batl_price_1","batl_price_2",
+"batl_volume_0","batl_volume_1","batl_volume_2","betting_type","country_code","date",
+"event_id","event_name","inplay","ltp","market_id","market_start_time","market_type",
+"open_date","runner_name","selection_id","sort_priority",
+"status","status_market","timestamp","timezone","trd_vol","tv","type","vwap","timestamp_min")
+
+FIELDS_Trades_over_under_basic = ("betting_type","country_code","date",
+"event_id","event_name","inplay","ltp","market_id","market_start_time","market_type",
+"open_date","runner_name","selection_id","sort_priority",
+"status","status_market","timestamp","timezone","type")
+
+
 Trades_min = namedtuple('Trades_min', FIELDS_Trades_min)
 
 FIELDS_Trades= ('date', 'sports_id', 'event_id', 'settled_date', 'full_description', 'scheduled_off',
