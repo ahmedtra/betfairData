@@ -13,7 +13,7 @@ from data.cassandra_wrapper.access import  CassTradesOVERUNDERRepository
 
 # import multiprocessing
 
-TYPE = "basic"
+TYPE = "advanced"
 
 def convert_to_datatime(df):
     df["date"] = df["date"].apply(lambda x: x.strftime("%Y-%m-%d %H:%M:%S.000"))
@@ -28,29 +28,59 @@ def sec_to_min_df(df_all):
     list_events = df_all["event_name"].unique().tolist()
 
     df_res = []
-
+    list_runner = df_all["runner_name"].unique().tolist()
     for event in list_events:
-        df = df_all[df_all["event_name"] == event].copy()
-        df = df[df["inplay"] == 1]
-        if df.empty==False:
-            # set timestamp as index and convert it to datetime
-            df['timestamp'] = pd.to_datetime(df['timestamp'])
-            df['minutes'] = df['timestamp'] - df['timestamp'].iloc[0]
-            df = df.set_index(['minutes'])
-            df_min = df.resample('min').first()
-            df_min['timestamp_min'] = df_min['timestamp'].iloc[0] + df_min.index
-            df_res.append(df_min)
+        for runner in list_runner:
+            df = df_all[df_all["event_name"] == event].copy()
+            df = df[df["runner_name"] == runner].copy()
+            df = df[~(df['status_market'] == "CLOSED")]
+            df = df[df["inplay"] == 1]
+            df["inplay"] = df["inplay"].astype(int)
+            if df.empty==False:
+                # set timestamp as index and convert it to datetime
+                df['timestamp_aux'] = pd.to_datetime(df['timestamp'])
+                df['minutes'] = df['timestamp_aux'] - df['timestamp_aux'].iloc[0]
+                df = df.set_index(['minutes'])
+                df_min = df.resample('min').first()
+                df_min['timestamp_min'] = df_min['timestamp_aux'].iloc[0] + df_min.index
+                df_min['timestamp_min'] = df_min['timestamp_min'].apply(lambda x: x.strftime("%Y-%m-%d %H:%M:%S.000"))
+                df_min = df_min.drop("timestamp_aux", axis = 1)
+                df_res.append(df_min.reset_index().copy())
 
-    return pd.concat(df_res, axis = 1)
+    df_res = pd.concat(df_res, axis = 0, ignore_index=True)
+    df_res["inplay"] = df_res["inplay"].fillna(2)
+    # This is part of the code treats all the issues that the resample functions introduces by changing the types of data
+    # Not a very clean way
+    df_res["inplay"] = df_res["inplay"].astype(int)
+    df_res["selection_id"] = df_res["selection_id"].fillna(-1).astype(int)
+    df_res["runner_name"] = df_res["runner_name"].fillna(-1).astype(int)
+    df_res["sort_priority"] = df_res["sort_priority"].fillna(-1).astype(int)
+    df_res["betting_type"] = df_res["betting_type"].fillna(" ")
+    df_res["country_code"] = df_res["country_code"].fillna(" ")
+    df_res["event_name"] = df_res["event_name"].fillna(" ")
+    df_res["event_id"] = df_res["event_id"].fillna(" ")
+    df_res["market_id"] = df_res["market_id"].fillna(" ")
+    df_res["market_type"] = df_res["market_type"].fillna(" ")
+    df_res["status_market"] = df_res["status_market"].fillna(" ")
+    df_res["type"] = df_res["type"].fillna(" ")
+    df_res["timezone"] = df_res["timezone"].fillna(" ")
+    df_res["status"] = df_res["status"].fillna(" ")
+    df_res["date"] = df_res["date"].fillna(datetime(1000,1,1).strftime("%Y-%m-%d %H:%M:%S.000"))
+    df_res["market_start_time"] = df_res["market_start_time"].fillna(datetime(1000,1,1).strftime("%Y-%m-%d %H:%M:%S.000"))
+    df_res["open_date"] = df_res["open_date"].fillna(datetime(1000,1,1).strftime("%Y-%m-%d %H:%M:%S.000"))
+    df_res["timestamp_min"] = df_res["timestamp_min"].fillna(datetime(1000,1,1).strftime("%Y-%m-%d %H:%M:%S.000"))
+    df_res = df_res.dropna(how = "all").reset_index()
+    return df_res
 
 
 class Recorder():
-    def __init__(self):
+    def __init__(self, db_type = "basic"):
         self.save_meta_data = False
         # dir_origin, dir_completed = get_json_files_dirs()
         # self.path = dir_origin
         # self.path_completed = dir_completed
         self.cass_repository = CassTradesOVERUNDERRepository()
+        self.db_type = db_type
 
     def write_to_sql(self, df, tablename):
         conn = sa.create_engine("mysql://root:Betfair@localhost/betfair?charset=utf8?host=localhost?port=3306", convert_unicode=True)
@@ -191,26 +221,27 @@ class Recorder():
                 return
             # Push Dataframe into the Database
             try:
+
                 if df["market_type"].unique()[0] == "MATCH_ODDS":
                     # self.write_to_sql(df,'eu_mo_apr_2018')
-                    print("Successful push to eu_mo_apr_2018")
+                    print("To be implemented")
                 elif "OVER_UNDER" in df["market_type"].unique()[0]:
                     # self.write_to_sql(df,'eu_ou_25_apr_2018')
-                    if TYPE == "basic":
+                    if self.db_type == "basic":
                         df = convert_to_datatime(df)
                         self.record_trade(df, "basic_min")
                         # self.record_trade(file_data, "basic_min") # TEST CHANGE, A REMETTRE COMME AVANT
                         # self.write_to_sql(df, 'basic_may18_ou25')
-                    else:
+                    elif self.db_type == "advanced":
                         df["date"] = df["date"].apply(lambda x: x.strftime("%Y-%m-%d %H:%M:%S.000"))
                         df["market_start_time"] = df["market_start_time"].apply(lambda x: x.strftime("%Y-%m-%d %H:%M:%S.000"))
                         df["timestamp"] = df["timestamp"].apply(lambda x: x.strftime("%Y-%m-%d %H:%M:%S.000"))
                         df["open_date"] = df["open_date"].apply(lambda x: x.strftime("%Y-%m-%d %H:%M:%S.000"))
 
-                        data_min = sec_to_min_df(df)
+                        # data_min = sec_to_min_df(df)
                         df["timestamp_min"] = 0
                         self.record_trade(df, "advanced_sec")
-                        self.record_trade(data_min, "advanced_min")
+                        # self.record_trade(data_min, "advanced_min")
 
                     # print("Successful push to eu_ou_25_apr_2018")
             except Exception as e:

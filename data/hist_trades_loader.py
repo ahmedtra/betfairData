@@ -59,6 +59,27 @@ class Loader():
             df = df.append(new_tab)
         return df
 
+    def create_full_dataframe(self, prim, event_name = None, row_factory = None):
+
+        def pandas_factory(colnames, rows):
+            return pd.DataFrame(rows, columns=colnames)
+
+        result = self.cass_repository.load_data_async(prim, event_name, row_factory = pandas_factory)
+
+        new_tab = result.result()._current_rows
+        new_tab = new_tab[new_tab["ltp"].isnull()==False]
+        # new_tab = new_tab[["event_name", "market_id", "timestamp", "country_code", "status"]]
+        df = new_tab
+        last_rows = pd.DataFrame()
+        while result.has_more_pages:
+            result = self.cass_repository.get_next_page(result)
+            new_tab = result.result()._current_rows
+            new_tab = new_tab[new_tab["ltp"].isnull()==False]
+            # new_tab = new_tab[["event_name", "market_id", "timestamp", "country_code", "status"]]
+
+            df = df.append(new_tab)
+        return df
+
     def load_data_by_date(self):
 
         dates = self.cass_repository.get_all_dates()

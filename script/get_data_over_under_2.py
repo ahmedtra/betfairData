@@ -2,7 +2,7 @@ from data.hist_trades_loader import Loader
 
 import pandas as pd
 import datetime
-from match import list_match
+
 
 if __name__ == "__main__":
 

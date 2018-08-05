@@ -5,14 +5,20 @@ from bz2 import BZ2Decompressor
 # from common import safe_delete
 import multiprocessing
 
-json_trades_recorder = Recorder()
+db_type = "advanced"
+
+json_trades_recorder = Recorder(db_type)
 
 # outputpath = "E:\\Json_ADVANCED_Mar18_EU\\"
 # source_path = "E:\\Betfair Data JSON\\ADVANCED - 2018 - EU\\"
 
 # source_path = "E:\\Betfair Data JSON\\BASIC - MAY 2018- OU - 25"
-source_path = "E:\Betfair Data JSON\BASIC - MAY 2015 - APR 2018 - OU"
-outputpath = "E:\\Json_BASIC_May18_EU\\"
+source_path = "E:\\Betfair Data JSON\\ADVANCED - JAN 18 - MAR 18 - OU 25"
+
+
+outputpath = "E:\\Json_ADVANCED - JAN-MAR 2018"
+if not os.path.exists(outputpath):
+    os.makedirs(outputpath)
 
 def decompress_file(filepath, newfilepath):
     with open(newfilepath, 'wb') as new_file, open(filepath, 'rb') as file:
